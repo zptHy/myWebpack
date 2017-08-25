@@ -1,0 +1,270 @@
+前言：webpack启动方式
+    1、无webpack.config.js配置文件  未全局安装启动：node_modules/.bin/webpack app/main.js public/bundle.js
+        全局安装：webpack app/main.js public/bundle.js
+
+    2、如果配置文件webpack.config.js没问题；启动非全局：node_modules/.bin/webpack
+                                           全局：webpack
+    3、如果有配置文件，并且在package.json中添加script配置  start中添加webpack
+            启动方式不需要区分全局或者非全局：npm start就能启动
+
+
+
+一、什么是webpack
+    WebPack可以看做是模块打包机：它做的事情是，分析你的项目结构，找到JavaScript模块以及其它的一些浏览器不能直接运行的拓展语言（Scss，TypeScript等），并将其转换和打包为合适的格式供浏览器使用。
+
+二、工作方式
+    把项目当做一个整体，通过给定的主文件(如:index.js),webpack将从这个文件开始找到你的项目的所有依赖文件，使用loaders处理他们，最后打包成为一个(或多个)浏览器可识别的javascript文件
+
+三、使用
+    1、安装：依赖node环境，全局安装npm install -g webpack.局部安装到目录npm install --save-dev webpack;
+    2、创建webpack.json文件，标准的npm说明文件，里面包括了当前项目的依赖模块,自定义脚本任务等。使用npm init命令自动创建这个文件
+    3、webpack.json创建好之后，我们在本项目中安装webpack作为依赖包：npm install --save-dev webpack
+    4、# {extry file}出填写入口文件的路径，本文中就是上述main.js的路径，
+      # {destination for bundled file}处填写打包文件的存放路径
+      # 填写路径的时候不用添加{}
+      webpack {entry file} {destination for bundled file}
+
+
+
+      指定入口文件后，webpack将自动识别项目所依赖的其它文件，不过需要注意的是如果你的webpack不是全局安装的，那么当你在终端中使用此命令时，需要额外指定其在node_modules中的地址，继续上面的例子，在终端中输入如下命令
+      # webpack非全局安装的情况
+      node_modules/.bin/webpack app/main.js public/bundle.js
+      #全局安装
+      webpack app/main.js public/bundle.js
+
+
+四、另一种方式是使用配置文件来使用
+    基础配置
+    在当前练习文件夹的根目录下新建一个名为webpack.config.js的文件，我们在其中写入如下所示的简单配置代码，目前的配置主要涉及到的内容是入口文件路径和打包后文件的存放路径。
+    module.exports = {
+      entry:  __dirname + "/app/main.js",//已多次提及的唯一入口文件
+      output: {
+        path: __dirname + "/public",//打包后的文件存放的地方
+        filename: "bundle.js"//打包后输出文件的文件名
+      }
+    }
+
+    注意：！！！__dirname是node.js中的一个全局变量，它指向当前执行脚本所在的目录
+
+    非全局安装 node_modules/.bin/webpack
+
+
+五、更加快捷的执行打包任务
+        对于npm进行配置后在命令中使用简单的  npm start命令来代替上面的命令行。在webpack.json中多scripts对象进行相关设置即可
+
+    {
+      "name": "webpack-sample-project",
+      "version": "1.0.0",
+      "description": "Sample webpack project",
+      "scripts": {
+        "start": "webpack" // 修改的是这里，JSON文件不支持注释，引用时请清除
+      },
+      "author": "zhang",
+      "license": "ISC",
+      "devDependencies": {
+        "webpack": "^1.12.9"
+      }
+    }
+
+    package.json中的script会按照一定顺序寻找命令对应位置，本地的node_modules/.bin路径就在这个寻找清单中，因此无论是全局还是局部安装  都不用指定详细路径
+
+    直接输入命令行 npm start就能执行scripts里面的命令
+
+六、webpack的强大功能
+    1、开发少不了调试，通过简单配置，webpack就能在打包时候生成source maps,提供一种对应编译文件和源文件方法，使得编译之后代码可读性更高，更加容易调试
+    在webpack的配置文件中配置source maps需要配置devtool，具有四种不同配置，各具优缺点
+        1):source map  在一个单独的文件中产生一个完整且功能完全的文件，这个文件具有做好的source maps但是会减慢打包速度
+        2):cheap-module-source-map  在一个单独文件中生成一个不带列映射的map，不带映射提高了打包速度，但是也会使得浏览器开发者工具只能对应到具体行，不能对应到具体符号，不便调试
+        3):eval-source-map  使用eval打包源文件模块，在同一个文件中生成干净完整的source-map。这个选项可以在不影响构建速度前提下生成完整的source map，但是对于打包后输出的js文件执行具有性能和安全隐患，开发阶段可以使用，生产阶段一定不要启用这个选项
+        4):cheap-module-eval-source-map 是在打包时候最快生成source map的方法，生成的source map会和打包后的javascript文件同行显示，没有映射列，会和3)中选项具有相似缺点
+    2、如上所示从上到下 打包越来越快 负面也越来越多
+        开发阶段使用eval-source-map，只是在开发阶段使用
+
+        继续对上面webpack.config.js添加配置
+        module.exports = {
+          devtool: 'eval-source-map',
+          entry:  __dirname + "/app/main.js",
+          output: {
+            path: __dirname + "/public",
+            filename: "bundle.js"
+          }
+        }
+
+        ！！cheap-module-eval-map方法构建速度更快，不利于调试，推荐在大型项目考虑时间成本时使用；
+
+
+七、构建本地服务
+    能够让浏览器监听项目代码修改，并自动刷新显示修改之后的结果，webpack提供一个可选的本地开发服务器，其基于node.js构建，是一个单独的组件，再=在webpack进行配置之前需要单独安装它作为项目依赖；
+        npm install --save-dev webpack-dev-server    //亲测可行
+        本地服务依赖安装之后  在项目根目录会出现一个  package-lock.json
+
+    devserver作为webpack配置选项中的一个，其中一些配置选项如下
+        1）：contentBase 默认webpack-dev-server会作为根文件夹提供本地服务器，若向萎另一个目录提供本地服务器，应在此设置其所在目录：如设置到public： contentBase: "./public",//本地服务器所加载的页面所在的目录
+        2）：port 设置默认监听端口，若省略，默认是 8080
+        3）：inline   设置为true，当源文件改变时候会自动刷新页面
+        4）：historyApiFallback 在开发单页面应用时候非常有用，其依赖于HTML5 history API ,若设置为true，所有跳转将指向index.html
+
+    然后将其配置到webpack.config.js文件中
+    module.exports = {
+      devtool: 'eval-source-map',
+
+      entry:  __dirname + "/app/main.js",
+      output: {
+        path: __dirname + "/public",
+        filename: "bundle.js"
+      },
+
+      devServer: {
+        contentBase: "./public",//本地服务器所加载的页面所在的目录
+        historyApiFallback: true,//不跳转
+        inline: true//实时刷新
+      }
+    }
+
+    然后在package.json中的scripts对象中添加命令，用以开启本地服务器
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "webpack",
+        "server": "webpack-dev-server --open"
+      },
+    最后在终端输入：npm run server 即可在本地的8080端口查看结果
+    经过测试：更改Greeter.js中的内容，改变之后页面实时刷新
+
+
+
+八、Loaders是webpack最激动人心的功能之一。
+    使用不同的loader,webpack有能力调用外部脚本或者工具，实现对不同格式的文件的处理，例如转换scss为css，！！！或者把ES6或者ES7转换为现代浏览器兼容的JS文件，对React的开发而言，合适的Loaders可以吧React中用到的JSX文件转换为JS文件
+
+    因此！！！很吊很强大！！！
+
+    Loaders需要单独安装并且在webpack.config.js中的modules关键字下面进行配置
+    Loaders配置包括一下几方面
+        1、test：一个用以匹配Loaders所处理文件的拓展名的正则表达式（必需品！！）
+        2、loader：loader的名称-也是必需品
+        3、include/exclude：手动添加必须处理的文件(文件夹)或屏蔽不需要处理的文件(可选)
+        4、query：为loader提供额外的设置选项
+    在配置之前，继续使用上面例子：我们把Greeter.js里面的文字放置在一个单独的JSON文件中，通过合适的配置是的Greeter.js可读取JSON文件的值；
+
+        var config = require('./config.json');
+        module.exports = function() {
+          var greet = document.createElement('div');
+          greet.textContent = config.greetText;
+          return greet;
+        };
+
+    ！！！未完待续
+
+九、Babel其实一个编译JavaScript的平台
+    作用：可以让你使用下一代的JavaScript代码，几十这些标准目前未被当前浏览器完全支持
+         使用基于JavaScript进行了拓展的语言，例如React的JSX；
+    首先说下Babel的安装与配置
+        Babel其实是几个模块化的包，其核心功能位于称为 babel-core的npm包中，webpack可以把其不同的包整合在一起使用，对于每一个你需要的功能或者拓展，都需要单独安装的（使用最多就是解析Es6的babel-preset-es2015包和解析JSX的babel-preset-react包）
+
+        一次性安装这些依赖包！！！！！！！！！！
+           // npm一次性安装多个依赖模块，模块之间用空格隔开
+           npm install --save-dev babel-core babel-loader babel-preset-es2015 babel-preset-react
+
+        然后需要在webpack.config.js重配置babel的方法，配置文件如下
+        module.exports = {
+            entry: __dirname + "/app/main.js",//已多次提及的唯一入口文件
+            output: {
+                path: __dirname + "/public",//打包后的文件存放的地方
+                filename: "bundle.js"//打包后输出文件的文件名
+            },
+            devtool: 'eval-source-map',
+            devServer: {
+                contentBase: "./public",//本地服务器所加载的页面所在的目录
+                historyApiFallback: true,//不跳转
+                inline: true//实时刷新
+            },
+            module: {
+                rules: [
+                    {
+                        test: /(\.jsx|\.js)$/,
+                        use: {
+                            loader: "babel-loader",
+                            options: {
+                                presets: [
+                                    "es2015", "react"
+                                ]
+                            }
+                        },
+                        exclude: /node_modules/
+                    }
+                ]
+            }
+        };
+
+
+     现在配置过之后就已经允许使用ES6和JSX的语法了，使用React需要先安装React和React-DOM
+            npm install --save react react-dom
+     然后使用ES6语法，更新Greeter.js，并返回一个React组件
+            //Greeter,js
+            import React, {Component} from 'react'
+            import config from './config.json';
+
+            class Greeter extends Component{
+              render() {
+                return (
+                  <div>
+                    {config.greetText}
+                  </div>
+                );
+              }
+            }
+
+            export default Greeter
+
+     再次修改main.js如下，使用ES6模块定义和渲染Greeter模块
+            // main.js
+            import React from 'react';
+            import {render} from 'react-dom';
+            import Greeter from './Greeter';
+
+            render(<Greeter />, document.getElementById('root'));
+    最后重新使用 npm start打包，然后开启本地服务器，就能看见内容并没有变化，说明react和ES6被正常打包了；
+
+十、Babel的配置
+    其可以完全在webpack.config.js中进行配置，但是考虑到Babel具有非常多的配置选项，单一放在webpack.config.js中往往会显得这个文件太复杂。因此一些开发者支持吧Babel配置项单独放在一个单独的名为“ .babelrc ”的配置文件中。现在我们就提取出相关部分，分成两个配置文件进行配置(webpack会自动调用 .babelrc里面的babel配置选项)
+
+    webpack.config.js原本如下：
+        module.exports = {
+            devtool:'eval-source-map',//打包时候能生成source map方便调试
+            entry:__dirname + "/app/main.js",//唯一文件入口
+            output:{
+                path:__dirname + "/public",//打包后文件存放位置
+                filename:"shuchu.js"//打包之后输出的文件名称
+            },
+            devServer: {
+                contentBase: "./public",//本地服务器所加载的页面所在的目录
+                    historyApiFallback: true,//不跳转
+                    inline: true//实时刷新
+            },
+            //下载完babel之后，经过下面的配置就能使用ES6以及JSX的语法
+            module: {
+                rules: [
+                    {
+                        test: /(\.jsx|\.js)$/,
+                        use: {
+                            loader: "babel-loader",
+
+                            //下面babel配置单独防止在.babelrc文件中
+                            // options: {
+                            //     presets: [
+                            //         "es2015", "react"
+                            //     ]
+                            // }
+                        },
+                        exclude: /node_modules/
+                    }
+                ]
+            }
+        };
+
+        然后将options选项删除，新建一个文件 .babelrc  将内容放置其中
+            //.babelrc
+            {
+              "presets": ["react", "es2015"]
+            }
+
+        重新打包，开启服务，显示一切正常；

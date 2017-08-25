@@ -1,0 +1,109 @@
+第三部分，产品构建----
+
+
+前两步之后已经构建了一个完整的开发环境，但是再产品阶段，需要对打包文件进行额外处理，如：优化、压缩、缓存、以及分离CSS和JS
+
+
+
+优化插件：大多来自webpack社区，需要通过npm安装，
+    OccurenceOrderPlugins:为组件分配ID，通过这个插件webpack可以分析和有限考虑使用最多的模块，并为他们分配最小的ID
+    UglifuJsPlugin:压缩JS代码
+    ExtractTextPlugins:分离CSS和JS代码
+    前两个都是内直插件，我们需要安装第三个
+        安装命令：npm install --save-dev extract-text-webpack-plugin
+
+压缩文件：：：先创建一个webpack.production.config.js文件，配置类似于webpack.config.js如下：
+    // webpack.production.config.js
+    const webpack = require('webpack');
+    const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+    module.exports = {
+        entry: __dirname + "/app/main.js",//已多次提及的唯一入口文件
+        output: {
+            path: __dirname + "/build",
+            filename: "bundle.js"
+        },
+        devtool: 'eval-source-map',
+        devServer: {
+            contentBase: "./public",//本地服务器所加载的页面所在的目录
+            historyApiFallback: true,//不跳转
+            inline: true,
+            hot: true
+        },
+        module: {
+            rules: [
+                {
+                    test: /(\.jsx|\.js)$/,
+                    use: {
+                        loader: "babel-loader"
+                    },
+                    exclude: /node_modules/
+                },
+                {
+                    test: /\.css$/,
+                    use: [
+                        {
+                            loader: "style-loader"
+                        }, {
+                            loader: "css-loader",
+                            options: {
+                                modules: true
+                            }
+                        }, {
+                            loader: "postcss-loader"
+                        }
+                    ]
+                }
+            ]
+        },
+        plugins: [
+            new webpack.BannerPlugin('版权所有，翻版必究'),
+            new HtmlWebpackPlugin({
+                template: __dirname + "/app/index.tmpl.html"//new 一个这个插件的实例，并传入相关的参数
+            }),
+            new webpack.HotModuleReplacementPlugin()//热加载插件
+        ],
+    };
+
+    第二步然后要在package.json添加配置项，添加在scripts中
+        "scripts": {
+            "test": "echo \"Error: no test specified\" && exit 1",
+            "start": "webpack",
+            "server": "webpack-dev-server --open",
+            "build": "NODE_ENV=production webpack --config ./webpack.production.config.js --progress"
+          },
+
+
+    然后在webpack.production.config.js的Plugins后面引用插件
+    头部一定添加上：
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+        plugins: [
+                new webpack.BannerPlugin('版权所有，翻版必究'),
+                new HtmlWebpackPlugin({
+                    template: __dirname + "/app/index.tmpl.html"
+                }),
+                new webpack.optimize.OccurrenceOrderPlugin(),
+                new webpack.optimize.UglifyJsPlugin(),
+                new ExtractTextPlugin("style.css")
+            ],
+
+    最后执行 npm run build   原因在package.json的scripts中build  类似于npm start
+
+
+    最后是缓存
+        最好的缓存是保证你的文件名和文件内容是匹配的，内容修改，名称也相应的变化
+        webpack可以吧一个哈希值添加到打包文件的文件名中，添加特殊的字符串混合体([name],[id]and[hash])输出到文件名之前
+
+        仅仅更改输出的配置项
+        const webpack = require('webpack');
+        const HtmlWebpackPlugin = require('html-webpack-plugin');
+        const ExtractTextPlugin = require('extract-text-webpack-plugin');
+
+        module.exports = {
+        ..
+            output: {
+                path: __dirname + "/build",
+                filename: "bundle-[hash].js"
+            },
+           ...
+        };

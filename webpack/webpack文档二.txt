@@ -1,0 +1,271 @@
+接上
+
+
+一切皆是模块
+    webpack可以吧所有的文件当做模块处理，JavaScript代码、CSS、fonts以及图片等通过合适的loader都可以被处理
+
+
+一、CSS处理
+    webpack提供两个工具处理样式表，css-loader和style-loader，二者处理的任务不同，css-loader能够使你使用类似 @import和url(...)的方法实现require()的功能。style-loaders将所有的计算后的样式加入页面中，二者组合自爱一起使你能够把样式表嵌入webpack打包后的JS文件中
+    同样首先需要安装
+            npm install --save-dev style-loader css-loader
+    安装之后就需要在webpack.config.js中module添加配置，如下
+        //使用
+        module.exports = {
+           ...
+            module: {
+                rules: [
+                    {
+                        test: /(\.jsx|\.js)$/,
+                        use: {
+                            loader: "babel-loader"
+                        },
+                        exclude: /node_modules/
+                    },
+                    {
+                        test: /\.css$/,
+                        use: [
+                            {
+                                loader: "style-loader"
+                            }, {
+                                loader: "css-loader"
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+        上面对同一个文件引入多个loader方法。
+
+
+    然后在APP文件夹中创建一个名字为  main.css文件，随便定义点样式
+    由于我们这边例子用到webpack只有单一入口，其他的模块需要通过import,requrie,url等与入口文件建立关联，为了能够让webpack能找到main.css文件，我们将其导入到main.js文件中，如下
+        //main.js
+        import React from 'react';
+        import {render} from 'react-dom';
+        import Greeter from './Greeter';
+
+        import './main.css';//使用require导入css文件
+
+        render(<Greeter />, document.getElementById('root'));
+
+    通常情况下，css和JS会打包到同一个文件中，并不会打包为一个单独的css，通过配置webpack可以吧css进行单独打包
+
+    css的module，模块化使得开发者把复杂的代码转化微笑的，干净的，依赖声明明确的但愿，配合优化工具，以来管理和加载管理可以自动完成
+    css的module技术意把JS的模块化思想带入到CSS中，通过CSS模块中，所有的雷鸣，动画名默认都只是作用域当前的模块。
+    在css-loader中进行配置，然后需要做的就是把 module传递到所需要的地方，然后就可以直接把CSS的类名传递到组件的代码中，这样的话就只会对当前组件有效，不必担心在不同的模块中使用相同的类名造成冲突
+     ！！！需要添加配置webpack.config.js文件
+            module.exports = {
+
+            ...
+
+            module: {
+                rules: [
+                    {
+                        test: /(\.jsx|\.js)$/,
+                        use: {
+                            loader: "babel-loader"
+                        },
+                        exclude: /node_modules/
+                    },
+                    {
+                        test: /\.css$/,
+                        use: [
+                            {
+                                loader: "style-loader"
+                            }, {
+                                loader: "css-loader",
+                                options: {
+                                    modules: true
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+            };
+
+     然后在app文件夹中创建一个Greeter.css文件
+        .root {
+          background-color: #eee;
+          padding: 10px;
+          border: 3px solid #ccc;
+        }
+     再然后导入 .root到Greeter.js中
+        import React, {Component} from 'react';
+        import config from './config.json';
+        import styles from './Greeter.css';//导入
+
+        class Greeter extends Component{
+          render() {
+            return (
+              <div className={styles.root}>//添加类名
+                {config.greetText}
+              </div>
+            );
+          }
+        }
+
+        export default Greeter
+
+
+     添加之后重新打包，之前样式是30px的字体加粗，打包之后添加了Greeter.js里面的样式
+     相同的类名也不会造成不同组件之间的污染
+
+二、给CSS添加适合的前缀
+    首先安装
+        npm install --save-dev postcss-loader autoprefixer
+
+    安装之后按照惯例继续进行配置
+    首先在webpack配置文件中添加 postcss-loader,然后在！！！根目录新建一个 postcss.config.js,添加如下代码之后，重新打包时候，写的css会自动根据can i use里的数据添加不同前缀
+        //webpack.config.js
+        module.exports = {
+            ...
+            module: {
+                rules: [
+                    {
+                        test: /(\.jsx|\.js)$/,
+                        use: {
+                            loader: "babel-loader"
+                        },
+                        exclude: /node_modules/
+                    },
+                    {
+                        test: /\.css$/,
+                        use: [
+                            {
+                                loader: "style-loader"
+                            }, {
+                                loader: "css-loader",
+                                options: {
+                                    modules: true
+                                }
+                            }, {
+                                loader: "postcss-loader"//此处添加这个配置
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+    新建的postcss.config.js里面内容
+        // postcss.config.js
+        module.exports = {
+            plugins: [
+                require('autoprefixer')
+            ]
+        }
+
+
+    然后重新开始打包  npm start
+    然后跑起来
+
+
+
+！！！原版文件目前在webpack-test2中  添加插件会被原本目录进行更改
+
+
+三、使用插件(Plugins)
+    插件是用来拓展webpack功能的，会在整个构建过程中生效，执行相关任务
+    loaders是在打包构建过程中用来处理源文件的（JSX，Scss，Less），一次处理一个，插件并不直接操作单个文件，它直接对整个构建过程产生效果
+    webpack有很多内直插件，也有很多第三方插件
+
+    ！！！插件的使用
+    如果想使用插件，必须先通过npm安装，然后就是在webpack配置中的plugins关键字部分添加该插件的一个实例(plugins是一个数组)
+    让我们继续吧！
+
+    首先webpack.config.js头部添加const webpack = require('webpack');
+    module同级下面添加上
+        plugins: [
+                new webpack.BannerPlugin('版权所有，翻版必究')
+            ],
+
+    HtmlWebpackPlugin插件
+        插件作用是依据一个简单的index.html模板，生成一个自动引用你打包后的JS文件的新的 index.html。在这每次生成的JS名称不同时候比较有用(例如添加了hash值)
+        安装 ：npm install --save-dev html-webpack-plugin
+
+        安装之后，移除public文件夹，利用插件，index.html会自动形成，在此之前css已经通过前面的操作打包到JS中了。随后在app目录之下创建一个 index.temp.html 文件模板。这个模板包括文件必须元素，在编译过程中，插件会依据此模板生成最终的 html页面，会自动添加依赖的css，js，favicon等文件
+
+        随后更新webpack.config.js文件如下：
+            const webpack = require('webpack');
+            const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+            module.exports = {
+                entry: __dirname + "/app/main.js",//已多次提及的唯一入口文件
+                output: {
+                    path: __dirname + "/build",
+                    filename: "bundle.js"
+                },
+                devtool: 'eval-source-map',
+                devServer: {
+                    contentBase: "./public",//本地服务器所加载的页面所在的目录
+                    historyApiFallback: true,//不跳转
+                    inline: true//实时刷新
+                },
+                module: {
+                    rules: [
+                        {
+                            test: /(\.jsx|\.js)$/,
+                            use: {
+                                loader: "babel-loader"
+                            },
+                            exclude: /node_modules/
+                        },
+                        {
+                            test: /\.css$/,
+                            use: [
+                                {
+                                    loader: "style-loader"
+                                }, {
+                                    loader: "css-loader",
+                                    options: {
+                                        modules: true
+                                    }
+                                }, {
+                                    loader: "postcss-loader"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                plugins: [
+                    new webpack.BannerPlugin('版权所有，翻版必究'),
+                    new HtmlWebpackPlugin({
+                        template: __dirname + "/app/index.tmpl.html"//new 一个这个插件的实例，并传入相关的参数
+                    })
+                ],
+            };
+然后执行 npm start 就会发现build文件夹下面生成了 bundle.js和index.html
+
+
+    Hot Module Replacement热加载插件
+        简介：Hot Module Replacement（HMR）是webpack较实用的插件，允许你在修改组件代码后，自动刷新实时预览修改后效果
+        配置解释不具体写了：http://www.jianshu.com/p/42e11515c10f
+    安装：npm install --save-dev babel-plugin-react-transform react-transform-hmr
+    之后配置Babel:
+        就是在.babelrc中添加配置项
+        // .babelrc
+        {
+          "presets": ["react", "es2015"],
+          "env": {
+            "development": {
+            "plugins": [["react-transform", {
+               "transforms": [{
+                 "transform": "react-transform-hmr",
+
+                 "imports": ["react"],
+
+                 "locals": ["module"]
+               }]
+             }]]
+            }
+          }
+        }
+
+    然后配置webpack.config.js文件
+        配制方法：在plugins配置项后面添加,new webpack.HotModuleReplacementPlugin()//热加载插件
+
+    然后当你使用React时候，就可以热加载模块了，每次保存就能在浏览器上看到更新内容
+
+
